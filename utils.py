@@ -52,6 +52,11 @@ def get_model(args, pretrained=True):
         model = models.__dict__[args.model_name](pretrained=pretrained)
         mean = (0.485, 0.456, 0.406)
         std = (0.229, 0.224, 0.225)
+    # ryu
+    elif 'masked' in args.model_name:
+        model = vit_models.masked_deit_small_patch16_224(pretrained=pretrained)
+        mean = (0.485, 0.456, 0.406)
+        std = (0.229, 0.224, 0.225)
     elif 'resnet_drop' in args.model_name:
         model = vit_models.drop_resnet50(pretrained=True)
         mean = (0.485, 0.456, 0.406)
