@@ -36,16 +36,19 @@ class MaskedVisionTransformer(VisionTransformer):
         print("x shape ", x.shape)
 
         if th_attn is not None:
-
+            x_masked = x
             if mask_best:
                 # c = a[b.unsqueeze(-1).expand_as(a)].view(256, 100, 300)
-                x_masked = x[th_attn.unsqueeze(-1).repeat(1, 1, D)].view(N, -1, D)
+                # x_masked = x[th_attn.unsqueeze(-1).repeat(1, 1, D)].view(N, -1, D)
                 # x_masked = torch.gather(x, dim=1, index=idx.unsqueeze(-1).repeat(1, 1, D))
-
+                # [seq_A[i, cls_tokens[i]] for i in range(cls_tokens.size(0))]
+                for batch_idx in range(N):
+                    x_masked[batch_idx] = x[batch_idx][th_attn[batch_idx]]
             else:
-                x_masked = x[th_attn.unsqueeze(-1).repeat(1, 1, D)].view(N, -1, D)
+                # x_masked = x[th_attn.unsqueeze(-1).repeat(1, 1, D)].view(N, -1, D)
                 # x_masked = torch.gather(x, dim=1, index=idx.unsqueeze(-1).repeat(1, 1, D))
-
+                for batch_idx in range(N):
+                    x_masked[batch_idx] = x[batch_idx][th_attn[batch_idx]]
 
         if mask_ratio > 0.0:
             len_keep = int(L * (1 - mask_ratio))
