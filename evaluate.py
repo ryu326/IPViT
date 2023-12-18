@@ -244,6 +244,7 @@ if __name__ == '__main__':
                     shuffle_name = ""
                 else:
                     shuffle_name = f"_{opt.exp_name}"
+            os.makedirs(f"report/random", exist_ok=True) # ryu
             json.dump(acc_dict, open(f"report/random/{opt.model_name}{shuffle_name}.json", "w"), indent=4)
 
     elif opt.dino:
@@ -255,6 +256,7 @@ if __name__ == '__main__':
                 acc = main(args=opt, device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
                 acc_dict[f"{'best' if opt.drop_best else 'worst'}"][f"{drop_lambda}"] = acc
         if not opt.test_image:
+            os.makedirs(f"report/dino", exist_ok=True) # ryu
             json.dump(acc_dict, open(f"report/dino/{opt.model_name}.json", "w"), indent=4)
 
     elif opt.lesion:
