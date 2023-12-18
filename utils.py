@@ -128,6 +128,9 @@ def parse_args():
     parser.add_argument('--drop_lambda', type=float, default=0.2, help='percentage of image to drop for box')
     parser.add_argument('--standard_box', action='store_true', default=False, help="drop using standard model")
     parser.add_argument('--dino', action='store_true', default=False, help="drop using dino model saliency")
+    # ryu
+    parser.add_argument('--dino', action='store_true', default=False, help="drop using dino model saliency")
+    parser.add_argument('--random_mask', action='store_true', default=False, help="randomly mask patches")
 
     parser.add_argument('--lesion', action='store_true', default=False, help="drop using dino model saliency")
     parser.add_argument('--block_index', type=int, default=0, help='block index for lesion method', nargs='*')

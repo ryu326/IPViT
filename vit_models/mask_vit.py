@@ -46,7 +46,7 @@ class MaskedVisionTransformer(VisionTransformer):
 
         return x_masked
 
-    def forward_features(self, x, block_index=None, drop_rate=0):
+    def forward_features(self, x, block_index=None, drop_rate=0, mask_count = 0):
         # taken from https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
         # with slight modifications to add the dist_token
         B, nc, w, h = x.shape
@@ -81,7 +81,7 @@ class MaskedVisionTransformer(VisionTransformer):
         # ryu
         print(drop_rate)
         print("before ", x.shape)
-        x = self.random_masking(x, drop_rate//196)
+        x = self.random_masking(x, mask_count//196)
         print("after  ", x.shape)
 
         layer_wise_tokens = []
@@ -101,8 +101,8 @@ class MaskedVisionTransformer(VisionTransformer):
 
         return [x[:, 0] for x in layer_wise_tokens], [x for x in layer_wise_tokens]
 
-    def forward(self, x, block_index=None, drop_rate=0, patches=False):
-        list_out, patch_out = self.forward_features(x, block_index, drop_rate)
+    def forward(self, x, block_index=None, drop_rate=0, patches=False, mask_count = 0):
+        list_out, patch_out = self.forward_features(x, block_index, drop_rate, mask_count = mask_count)
         x = [self.head(x) for x in list_out]
         if patches:
             return x, patch_out

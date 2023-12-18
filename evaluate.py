@@ -33,10 +33,13 @@ def main(args, device, verbose=True):
         elif args.dino:
             print(f"{args.model_name} picking {args.drop_lambda * 100} %  "
                   f"{'foreground' if args.drop_best else 'background'} pixels using dino")
+        elif args.random_mask:
+            print(f"{args.model_name} masking {args.drop_count} random patches")
+
         else:
             print(f"{args.model_name} dropping {'least' if args.drop_best else 'most'} "
                   f"matching {args.drop_count} patches")
-
+        
     if args.dino:
         cur_model_name = args.model_name
         args.model_name = "dino_small"
@@ -154,7 +157,9 @@ def main(args, device, verbose=True):
                     img = img * (1 - th_attn)
                 else:
                     img = img * th_attn
-
+            # ryu
+            elif args.random_mask:
+                pass
             else:
                 pass
 
@@ -190,6 +195,10 @@ def main(args, device, verbose=True):
                 else:
                     clean_out = model(normalize(img.clone(), mean=mean, std=std), block_index=args.block_index,
                                       drop_rate=args.drop_count)
+            # ryu
+            elif args.random_mask:
+                clean_out = model(normalize(img.clone(), mean=mean, std=std), mask_count = args.drop_count)
+
             else:
                 clean_out = model(normalize(img.clone(), mean=mean, std=std))
 
@@ -246,6 +255,27 @@ if __name__ == '__main__':
                     shuffle_name = f"_{opt.exp_name}"
             os.makedirs(f"report/random", exist_ok=True) # ryu
             json.dump(acc_dict, open(f"report/random/{opt.model_name}{shuffle_name}.json", "w"), indent=4)
+    # ryu
+    elif opt.random_mask:
+        for rand_exp in range(opt.exp_count):
+            acc_dict[f"run_{rand_exp:03d}"] = {}
+            for drop_count in range(0, 10):
+                if isinstance(opt.shuffle_size, list):
+                    opt.drop_count = drop_count * opt.shuffle_size[0] * opt.shuffle_size[1] // 10
+                else:
+                    opt.drop_count = drop_count * 196 // 10
+                acc = main(args=opt, device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
+                acc_dict[f"run_{rand_exp:03d}"][f"{drop_count}"] = acc
+        if not opt.test_image:
+            if isinstance(opt.shuffle_size, list):
+                shuffle_name = f"_{opt.shuffle_size[0]}_{opt.shuffle_size[1]}"
+            else:
+                if opt.exp_name is None:
+                    shuffle_name = ""
+                else:
+                    shuffle_name = f"_{opt.exp_name}"
+            os.makedirs(f"report/random_mask", exist_ok=True) # ryu
+            json.dump(acc_dict, open(f"report/random_mask/{opt.model_name}{shuffle_name}.json", "w"), indent=4)
 
     elif opt.dino:
         for drop_best in [True, False]:
