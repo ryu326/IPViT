@@ -81,7 +81,7 @@ class MaskedVisionTransformer(VisionTransformer):
         # ryu
         print(drop_rate)
         print("before ", x.shape)
-        x = self.random_masking(x, mask_count//196)
+        x = self.random_masking(x, mask_count/196)
         print("after  ", x.shape)
 
         layer_wise_tokens = []
