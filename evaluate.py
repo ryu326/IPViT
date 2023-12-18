@@ -166,21 +166,21 @@ def main(args, device, verbose=True):
                 attentions = dino_model.forward_selfattention(normalize(img.clone(), mean=mean, std=std))
                 attentions = attentions[:, head_number, 0, 1:]
 
-                w_featmap = int(np.sqrt(attentions.shape[-1]))
-                h_featmap = int(np.sqrt(attentions.shape[-1]))
-                scale = img.shape[2] // w_featmap
+                # w_featmap = int(np.sqrt(attentions.shape[-1]))
+                # h_featmap = int(np.sqrt(attentions.shape[-1]))
+                # scale = img.shape[2] // w_featmap
 
                 # we keep only a certain percentage of the mass
-                val, idx = torch.sort(attentions)
-                val /= torch.sum(val, dim=1, keepdim=True)
-                cumval = torch.cumsum(val, dim=1)
-                th_attn = cumval > (1 - args.drop_lambda)
-                idx2 = torch.argsort(idx)
-                for batch_idx in range(th_attn.shape[0]):
-                    th_attn[batch_idx] = th_attn[batch_idx][idx2[batch_idx]]
+                # val, idx = torch.sort(attentions)
+                # val /= torch.sum(val, dim=1, keepdim=True)
+                # cumval = torch.cumsum(val, dim=1)
+                # th_attn = cumval > (1 - args.drop_lambda)
+                # idx2 = torch.argsort(idx)
+                # for batch_idx in range(th_attn.shape[0]):
+                #     th_attn[batch_idx] = th_attn[batch_idx][idx2[batch_idx]]
 
-                th_attn = th_attn.reshape(-1, w_featmap, h_featmap).float()
-                th_attn = torch.nn.functional.interpolate(th_attn.unsqueeze(1), scale_factor=scale, mode="nearest")
+                # th_attn = th_attn.reshape(-1, w_featmap, h_featmap).float()
+                # th_attn = torch.nn.functional.interpolate(th_attn.unsqueeze(1), scale_factor=scale, mode="nearest")
 
                 # if args.drop_best:  # foreground
                 #     img = img * (1 - th_attn)
@@ -227,7 +227,7 @@ def main(args, device, verbose=True):
                                   mask_count = args.drop_count)
             elif args.dino_mask:
                 clean_out = model(normalize(img.clone(), mean=mean, std=std), 
-                                  th_attn = th_attn, mask_best=args.drop_best)
+                                  attentions = attentions, mask_best=args.drop_best)
 
             else:
                 clean_out = model(normalize(img.clone(), mean=mean, std=std))
@@ -320,7 +320,7 @@ if __name__ == '__main__':
             json.dump(acc_dict, open(f"report/dino/{opt.model_name}.json", "w"), indent=4)
     # ryu
     elif opt.dino_mask:
-        for drop_best in [False, True]:
+        for drop_best in [True, False]:
             opt.drop_best = drop_best
             acc_dict[f"{'best' if opt.drop_best else 'worst'}"] = {}
             for drop_lambda in range(1, 11):
