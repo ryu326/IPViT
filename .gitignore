@@ -2,7 +2,8 @@
 /ckpts
 /data/voc
 /wandb
-/report
+# ryu
+# /report
 
 # Pycharm
 .idea
