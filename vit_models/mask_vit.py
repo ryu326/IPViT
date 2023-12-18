@@ -27,7 +27,36 @@ class MaskedVisionTransformer(VisionTransformer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def patch_masking(self, x, mask_ratio = 0.0, th_attn = None, mask_best=False): # mask_ratio: 버리는 비율
+        cls_token = x[:, :1, :]
+        x = x[:, 1:, :]
+        N, L, D = x.shape  # batch, length, dim
 
+        print("attn shape", th_attn.shape)
+        print("x shape ", x.shape)
+
+        if th_attn is not None:
+            if mask_best:
+                x_masked = x[1-th_attn]
+            else:
+                x_masked = x[th_attn]
+
+        if mask_ratio > 0.0:
+            len_keep = int(L * (1 - mask_ratio))
+
+            noise = torch.rand([N, L], device=x.device)
+
+            # sort noise for each sample
+            ids_shuffle = torch.argsort(noise, dim=1)  # ascend: small is keep, large is remove
+
+            # keep the first subset
+            ids_keep = ids_shuffle[:, :len_keep]
+            x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
+            
+        x_masked = torch.cat([cls_token, x_masked], dim=1)
+
+        return x_masked
+    
     def random_masking(self, x, mask_ratio): # mask_ratio: 버리는 비율
         cls_token = x[:, :1, :]
         x = x[:, 1:, :]
@@ -46,7 +75,7 @@ class MaskedVisionTransformer(VisionTransformer):
 
         return x_masked
 
-    def forward_features(self, x, block_index=None, drop_rate=0, mask_count = 0):
+    def forward_features(self, x, block_index=None, drop_rate=0, mask_count = 0, th_attn=None, mask_best = False):
         # taken from https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
         # with slight modifications to add the dist_token
         B, nc, w, h = x.shape
@@ -80,9 +109,9 @@ class MaskedVisionTransformer(VisionTransformer):
         x = self.pos_drop(x)
         # ryu
         # print(mask_count)
-        # print("before ", x.shape)
-        x = self.random_masking(x, mask_count/196)
-        # print("after  ", x.shape)
+        print("before ", x.shape)
+        x = self.patch_masking(x, mask_count/196, th_attn=th_attn ,mask_best=mask_best)
+        print("after  ", x.shape)
 
         layer_wise_tokens = []
         for idx, blk in enumerate(self.blocks):
@@ -101,8 +130,9 @@ class MaskedVisionTransformer(VisionTransformer):
 
         return [x[:, 0] for x in layer_wise_tokens], [x for x in layer_wise_tokens]
 
-    def forward(self, x, block_index=None, drop_rate=0, patches=False, mask_count = 0):
-        list_out, patch_out = self.forward_features(x, block_index, drop_rate, mask_count = mask_count)
+    def forward(self, x, block_index=None, drop_rate=0, patches=False, mask_count = 0, th_attn = None, mask_best=False):
+        list_out, patch_out = self.forward_features(x, block_index, drop_rate, 
+                                                    mask_count = mask_count, th_attn=th_attn ,mask_best=mask_best)
         x = [self.head(x) for x in list_out]
         if patches:
             return x, patch_out

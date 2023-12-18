@@ -40,7 +40,7 @@ def main(args, device, verbose=True):
             print(f"{args.model_name} dropping {'least' if args.drop_best else 'most'} "
                   f"matching {args.drop_count} patches")
         
-    if args.dino:
+    if args.dino or args.dino_mask: # ryu
         cur_model_name = args.model_name
         args.model_name = "dino_small"
         dino_model, _, _ = get_model(args)
@@ -160,6 +160,32 @@ def main(args, device, verbose=True):
             # ryu
             elif args.random_mask:
                 pass
+            elif args.dino_mask:
+                head_number = 1
+
+                attentions = dino_model.forward_selfattention(normalize(img.clone(), mean=mean, std=std))
+                attentions = attentions[:, head_number, 0, 1:]
+
+                w_featmap = int(np.sqrt(attentions.shape[-1]))
+                h_featmap = int(np.sqrt(attentions.shape[-1]))
+                scale = img.shape[2] // w_featmap
+
+                # we keep only a certain percentage of the mass
+                val, idx = torch.sort(attentions)
+                val /= torch.sum(val, dim=1, keepdim=True)
+                cumval = torch.cumsum(val, dim=1)
+                th_attn = cumval > (1 - args.drop_lambda)
+                idx2 = torch.argsort(idx)
+                for batch_idx in range(th_attn.shape[0]):
+                    th_attn[batch_idx] = th_attn[batch_idx][idx2[batch_idx]]
+
+                th_attn = th_attn.reshape(-1, w_featmap, h_featmap).float()
+                th_attn = torch.nn.functional.interpolate(th_attn.unsqueeze(1), scale_factor=scale, mode="nearest")
+
+                # if args.drop_best:  # foreground
+                #     img = img * (1 - th_attn)
+                # else:
+                #     img = img * th_attn
             else:
                 pass
 
@@ -197,7 +223,11 @@ def main(args, device, verbose=True):
                                       drop_rate=args.drop_count)
             # ryu
             elif args.random_mask:
-                clean_out = model(normalize(img.clone(), mean=mean, std=std), mask_count = args.drop_count)
+                clean_out = model(normalize(img.clone(), mean=mean, std=std), 
+                                  mask_count = args.drop_count)
+            elif args.dino_mask:
+                clean_out = model(normalize(img.clone(), mean=mean, std=std), 
+                                  th_attn = th_attn, mask_best=args.drop_best)
 
             else:
                 clean_out = model(normalize(img.clone(), mean=mean, std=std))
@@ -288,6 +318,18 @@ if __name__ == '__main__':
         if not opt.test_image:
             os.makedirs(f"report/dino", exist_ok=True) # ryu
             json.dump(acc_dict, open(f"report/dino/{opt.model_name}.json", "w"), indent=4)
+    # ryu
+    elif opt.dino_mask:
+        for drop_best in [True, False]:
+            opt.drop_best = drop_best
+            acc_dict[f"{'best' if opt.drop_best else 'worst'}"] = {}
+            for drop_lambda in range(1, 11):
+                opt.drop_lambda = drop_lambda / 10
+                acc = main(args=opt, device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
+                acc_dict[f"{'best' if opt.drop_best else 'worst'}"][f"{drop_lambda}"] = acc
+        if not opt.test_image:
+            os.makedirs(f"report/dino", exist_ok=True) # ryu
+            json.dump(acc_dict, open(f"report/dino_mask/{opt.model_name}.json", "w"), indent=4)
 
     elif opt.lesion:
         for rand_exp in range(opt.exp_count):
