@@ -79,10 +79,10 @@ class MaskedVisionTransformer(VisionTransformer):
         x = x + pos_embed
         x = self.pos_drop(x)
         # ryu
-        print(mask_count)
-        print("before ", x.shape)
+        # print(mask_count)
+        # print("before ", x.shape)
         x = self.random_masking(x, mask_count/196)
-        print("after  ", x.shape)
+        # print("after  ", x.shape)
 
         layer_wise_tokens = []
         for idx, blk in enumerate(self.blocks):
