@@ -14,7 +14,7 @@ from torchvision.transforms import transforms
 from tqdm import tqdm
 
 import vit_models
-
+import vit_models.mask_vit
 
 def get_voc_dataset(voc_root=None):
     if voc_root is None:
