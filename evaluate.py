@@ -320,7 +320,7 @@ if __name__ == '__main__':
             json.dump(acc_dict, open(f"report/dino/{opt.model_name}.json", "w"), indent=4)
     # ryu
     elif opt.dino_mask:
-        for drop_best in [True, False]:
+        for drop_best in [False, True]:
             opt.drop_best = drop_best
             acc_dict[f"{'best' if opt.drop_best else 'worst'}"] = {}
             for drop_lambda in range(1, 11):

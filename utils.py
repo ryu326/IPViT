@@ -130,6 +130,7 @@ def parse_args():
     parser.add_argument('--dino', action='store_true', default=False, help="drop using dino model saliency")
     # ryu
     parser.add_argument('--random_mask', action='store_true', default=False, help="randomly mask patches")
+    parser.add_argument('--dino_mask', action='store_true', default=False, help="mask using dino model saliency")
 
     parser.add_argument('--lesion', action='store_true', default=False, help="drop using dino model saliency")
     parser.add_argument('--block_index', type=int, default=0, help='block index for lesion method', nargs='*')
