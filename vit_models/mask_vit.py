@@ -79,7 +79,7 @@ class MaskedVisionTransformer(VisionTransformer):
         x = x + pos_embed
         x = self.pos_drop(x)
         # ryu
-        print(drop_rate)
+        print(mask_count)
         print("before ", x.shape)
         x = self.random_masking(x, mask_count/196)
         print("after  ", x.shape)
