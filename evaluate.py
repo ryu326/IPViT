@@ -289,7 +289,7 @@ if __name__ == '__main__':
     elif opt.random_mask:
         for rand_exp in range(opt.exp_count):
             acc_dict[f"run_{rand_exp:03d}"] = {}
-            for drop_count in range(0, 10):
+            for drop_count in range(1, 10):
                 if isinstance(opt.shuffle_size, list):
                     opt.drop_count = drop_count * opt.shuffle_size[0] * opt.shuffle_size[1] // 10
                 else:
