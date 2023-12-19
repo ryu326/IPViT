@@ -26,14 +26,36 @@ __all__ = [
 class MaskedVisionTransformer(VisionTransformer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
 
-    def patch_masking(self, x, mask_ratio = 0.0, th_attn = None, mask_best=False): # mask_ratio: 버리는 비율
+    def patch_masking(self, x, mask_ratio = 0.0, th_attn = None, 
+                      attentions = None, drop_lambda = 0.0, mask_best=False): # mask_ratio: 버리는 비율
         cls_token = x[:, :1, :]
         x = x[:, 1:, :]
         N, L, D = x.shape  # batch, length, dim
 
-        print("attn shape", th_attn.shape)
-        print("x shape ", x.shape)
+        if attentions is not None:
+
+            print("attn shape", th_attn.shape)
+            print("x shape ", x.shape)
+            val, idx = torch.sort(attentions)
+            val /= torch.sum(val, dim=1, keepdim=True)
+            cumval = torch.cumsum(val, dim=1)
+            th_attn = cumval > (1 - drop_lambda)
+            # idx2 = torch.argsort(idx)
+            len_keep = torch.topk(attn.mean(dim=1)[:,0,1:],self.len_num_keep).indices
+            x = torch.gather(x, dim=1, index=len_keep.unsqueeze(-1).repeat(1, 1, D))
+            
+
+            if mask_best:
+
+                    x_masked[batch_idx] = x[batch_idx][th_attn[batch_idx]]
+            else:
+
+
+
+                for batch_idx in range(N):
+                    x_masked[batch_idx] = x[batch_idx][th_attn[batch_idx]]
 
         if th_attn is not None:
             x_masked = x
